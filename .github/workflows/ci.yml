@@ -1,0 +1,35 @@
+name: CareerOS AI CI Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Execute Linter Checks
+        run: bun run lint
+
+      - name: Execute TypeScript Compiler Checks
+        run: bun x tsc --noEmit
+
+      - name: Execute Unit and Integration Tests
+        run: bun x vitest run
+
+      - name: Execute Production Build Compilation
+        run: bun run build

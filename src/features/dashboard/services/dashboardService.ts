@@ -1,5 +1,5 @@
 import { ProfileRepository } from '../repositories/profileRepository';
-import { AIGateway } from '@/lib/ai/gateway';
+import { AIGateway } from '@/shared/lib/ai/gateway';
 import { z } from 'zod';
 
 const DailyPrioritiesSchema = z.object({

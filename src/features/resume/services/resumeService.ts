@@ -1,4 +1,4 @@
-import { AIGateway } from '@/lib/ai/gateway';
+import { AIGateway } from '@/shared/lib/ai/gateway';
 import { ParsedResume, ParsedResumeSchema, ATSMatchResult, ATSMatchResultSchema } from '../schemas';
 
 export class ResumeService {

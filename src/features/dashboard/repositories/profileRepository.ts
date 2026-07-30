@@ -1,4 +1,4 @@
-import { DbClient } from '@/lib/db/config';
+import { DbClient } from '@/shared/lib/db/config';
 import { Profile, UserSkill, PlacementReadiness } from '../schemas';
 
 export class ProfileRepository {
