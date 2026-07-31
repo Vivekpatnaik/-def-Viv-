@@ -1,11 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { authMiddleware } from './shared/middleware/authMiddleware';
 
-export default function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   return authMiddleware(request);
 }
 
-// Map Next.js proxy matcher rules to optimize execution speeds
+// Map Next.js middleware matcher rules to optimize execution speeds
 export const config = {
   matcher: [
     /*
