@@ -8,11 +8,10 @@ import { useToast } from '@/shared/providers/ToastProvider';
 import { CareerService } from '../services/careerService';
 import { Card } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
-import { Compass, CheckCircle, ShieldAlert, Clock, Sparkles, Loader2, Play, Award, HelpCircle } from 'lucide-react';
+import { Compass, ShieldAlert, Clock, Sparkles, Loader2, Award } from 'lucide-react';
 
 export function CareerWorkspace() {
   const [sessionState, setSessionState] = useState<'setup' | 'active'>('setup');
-  const [profileData, setProfileData] = useState<CareerProfileInput | null>(null);
   const [gaps, setGaps] = useState<SkillGapDetail[]>([]);
   const [roadmap, setRoadmap] = useState<AdaptiveRoadmap | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,7 +38,6 @@ export function CareerWorkspace() {
 
   const handleStartAnalysis = async (data: CareerProfileInput) => {
     setIsProcessing(true);
-    setProfileData(data);
     addToast('Executing semantic skill gap comparisons...', 'info');
 
     try {

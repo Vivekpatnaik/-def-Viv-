@@ -200,7 +200,7 @@ export class AIGateway {
   ): Promise<T> {
     // In a production build, this routes to official model-provider REST endpoints
     // validating response schemas via Zod before resolving.
-    console.log(`[AIGateway] Executing production request to provider '${config.provider}', model: '${config.model}'`);
+    console.log(`[AIGateway] Executing production request to provider '${config.provider}', model: '${config.model}' with prompt length ${_userPrompt.length} matching schema ${_schema ? 'configured' : 'none'} with key size ${_apiKey.length}`);
     throw new Error('Real network calls require official production credentials.');
   }
 }
