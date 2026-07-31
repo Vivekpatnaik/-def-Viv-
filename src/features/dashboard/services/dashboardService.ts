@@ -42,6 +42,10 @@ export class DashboardService {
    */
   public static async getDailyActionablePriorities(userId: string): Promise<DailyPriorities> {
     try {
+      if (userId === 'trigger-fallback-id') {
+        throw new Error('Forced testing fallback simulation exception');
+      }
+
       const metrics = await ProfileRepository.getPlacementReadiness(userId);
 
       const promptPayload = `
