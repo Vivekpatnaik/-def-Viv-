@@ -31,7 +31,7 @@ export class AuthService {
         email: user.email || credentials.email,
         fullName: user.user_metadata?.full_name || 'Alex Rivera',
         role: 'student',
-        tenantId: user.email?.split('@')[2] || null,
+        tenantId: user.email?.split('@')[1] || null,
       };
 
       console.log('[AuthService] Login successful via Supabase.');
@@ -52,7 +52,7 @@ export class AuthService {
         email: credentials.email,
         fullName: 'Alex Rivera',
         role: 'student',
-        tenantId: credentials.email.split('@')[2] || null,
+        tenantId: credentials.email.split('@')[1] || null,
       };
       return session;
     }
@@ -85,7 +85,7 @@ export class AuthService {
         email: user.email || data.email,
         fullName: data.fullName,
         role: data.roleType === 'recruiter' ? 'recruiter' : 'student',
-        tenantId: data.email.split('@')[2] || null,
+        tenantId: data.email.split('@')[1] || null,
       };
 
       console.log('[AuthService] Sign up successful via Supabase.');
@@ -105,7 +105,7 @@ export class AuthService {
         email: data.email,
         fullName: data.fullName,
         role: 'student',
-        tenantId: data.email.split('@')[2] || null,
+        tenantId: data.email.split('@')[1] || null,
       };
       return session;
     }
