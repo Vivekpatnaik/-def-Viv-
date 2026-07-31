@@ -1,5 +1,6 @@
 import { AIGateway } from '@/shared/lib/ai/gateway';
 import { EventBus } from '@/shared/lib/events/bus';
+import { SYSTEM_PROMPTS } from '@/shared/config/prompts';
 import {
   InterviewSetupInput,
   GeneratedQuestion,
@@ -59,11 +60,7 @@ export class InterviewService {
           provider: 'anthropic',
           model: 'claude-3-5-sonnet',
           temperature: 0.3,
-          systemPrompt: `
-            You are an elite corporate interviewer.
-            Generate a targeted interview question based on the candidate's target role, experience, and the adaptive difficulty selection.
-            Provide the question text, its category, its designated difficulty, and a concise outline of the ideal response criteria.
-          `,
+          systemPrompt: SYSTEM_PROMPTS.INTERVIEW.QUESTION_GENERATOR,
         },
         promptPayload,
         GeneratedQuestionSchema
@@ -98,13 +95,7 @@ export class InterviewService {
           provider: 'anthropic',
           model: 'claude-3-5-sonnet',
           temperature: 0.2,
-          systemPrompt: `
-            You are an expert technical and communication interviewer.
-            Evaluate the candidate's answer transcript against standard grading criteria.
-            1. Grade the overall response accuracy and communication clarity from 0 to 100.
-            2. Provide highly constructive feedback detailing logic gaps or missing parameters.
-            3. If the candidate makes specific assertions (such as mentioning REST APIs, SQL indexing, or state machines), automatically generate a targeted, follow-up question digging deeper into statelessness, caching, composite key behaviors, or boundary states.
-          `,
+          systemPrompt: SYSTEM_PROMPTS.INTERVIEW.ANSWER_EVALUATOR,
         },
         userPrompt,
         AnswerGradingSchema
@@ -141,11 +132,7 @@ export class InterviewService {
           provider: 'anthropic',
           model: 'claude-3-5-sonnet',
           temperature: 0.2,
-          systemPrompt: `
-            Formulate a final multi-dimensional scorecard evaluating a candidate across five areas:
-            Technical, Communication, Confidence, Problem Solving, and Behavioral.
-            List overall strengths, weaknesses, critical mistakes, and recommend precise learning tasks and resource URLs to address technical debt.
-          `,
+          systemPrompt: SYSTEM_PROMPTS.INTERVIEW.COMPREHENSIVE_EVALUATOR,
         },
         payload,
         ComprehensiveEvaluationSchema

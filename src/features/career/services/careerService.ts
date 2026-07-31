@@ -1,4 +1,5 @@
 import { AIGateway } from '@/shared/lib/ai/gateway';
+import { SYSTEM_PROMPTS } from '@/shared/config/prompts';
 import {
   CareerProfileInput,
   SkillGapDetail,
@@ -32,11 +33,7 @@ export class CareerService {
           provider: 'anthropic',
           model: 'claude-3-5-sonnet',
           temperature: 0.1,
-          systemPrompt: `
-            You are an expert technical recruiter and taxonomist.
-            Compare the candidate's active languages, frameworks, and experience with the target role.
-            Generate a detailed list of missing skills, estimating learning times, difficulty levels, and importance rankings.
-          `,
+          systemPrompt: SYSTEM_PROMPTS.CAREER.SKILL_GAP_ANALYZER,
         },
         userPrompt,
         SkillGapsArraySchema
@@ -73,12 +70,7 @@ export class CareerService {
           provider: 'anthropic',
           model: 'claude-3-5-sonnet',
           temperature: 0.2,
-          systemPrompt: `
-            You are a master learning experience designer.
-            Schedule a sequential, weekly preparation roadmap over the selected duration in months.
-            Tailor tasks and estimated hours according to the candidate's available weekly study hours.
-            Provide strictly official, high-quality reference documentations (such as react.dev, nextjs.org, or standard guides) for learning resources. Never generate fake URLs.
-          `,
+          systemPrompt: SYSTEM_PROMPTS.CAREER.ROADMAP_GENERATOR,
         },
         userPrompt,
         AdaptiveRoadmapSchema

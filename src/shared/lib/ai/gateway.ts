@@ -72,15 +72,40 @@ export class AIGateway {
 
   /**
    * Recursively traverses a Zod schema and generates valid mock data aligned with the input requirements.
+   * Supports both standard Zod instances and wrapped marshalled Zod schemas.
    */
   private static generateCompliantStructureFromZod(schema: any, userPrompt: string, keyName?: string): any {
-    // Handle ZodOptional and ZodNullable
-    if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
-      return this.generateCompliantStructureFromZod(schema.unwrap(), userPrompt, keyName);
+    if (!schema) {
+      return null;
     }
 
-    if (schema instanceof z.ZodObject) {
-      const shape = schema.shape;
+    // Capture type indicator from standard constructor, def.type or _def.typeName
+    const typeIndicator = (schema.def?.type || schema._def?.typeName || schema.constructor?.name || '').toString();
+
+    // 1. Handle Optional, Nullable and Defaults
+    if (
+      typeIndicator === 'optional' ||
+      typeIndicator === 'nullable' ||
+      typeIndicator === 'ZodOptional' ||
+      typeIndicator === 'ZodNullable'
+    ) {
+      const inner = schema.unwrap ? schema.unwrap() : (schema.def?.innerType || schema._def?.innerType);
+      return this.generateCompliantStructureFromZod(inner, userPrompt, keyName);
+    }
+
+    if (typeIndicator === 'default' || typeIndicator === 'ZodDefault') {
+      const inner = schema.def?.innerType || schema._def?.innerType;
+      return this.generateCompliantStructureFromZod(inner, userPrompt, keyName);
+    }
+
+    if (typeIndicator === 'effects' || typeIndicator === 'ZodEffects') {
+      const inner = schema.def?.schema || schema._def?.schema;
+      return this.generateCompliantStructureFromZod(inner, userPrompt, keyName);
+    }
+
+    // 2. Handle Objects
+    if (typeIndicator === 'object' || typeIndicator === 'ZodObject') {
+      const shape = schema.shape || schema.def?.shape || schema._def?.shape || {};
       const result: Record<string, any> = {};
       for (const key in shape) {
         result[key] = this.generateCompliantStructureFromZod(shape[key], userPrompt, key);
@@ -88,26 +113,35 @@ export class AIGateway {
       return result;
     }
 
-    if (schema instanceof z.ZodArray) {
-      // Return a 3-item array to satisfy length(3) and minLength check metrics natively
-      return [
-        this.generateCompliantStructureFromZod(schema.element, userPrompt, keyName),
-        this.generateCompliantStructureFromZod(schema.element, userPrompt, keyName),
-        this.generateCompliantStructureFromZod(schema.element, userPrompt, keyName),
-      ];
+    // 3. Handle Arrays
+    if (typeIndicator === 'array' || typeIndicator === 'ZodArray') {
+      const element = schema.element || schema.def?.element || schema._def?.element;
+      const exactVal = schema.def?.exactLength?.value || schema._def?.exactLength?.value;
+      const minVal = schema.def?.minLength?.value || schema._def?.minLength?.value;
+      const count = exactVal || minVal || 3;
+
+      const items: any[] = [];
+      for (let i = 0; i < count; i++) {
+        items.push(this.generateCompliantStructureFromZod(element, userPrompt, keyName));
+      }
+      return items;
     }
 
-    if (schema instanceof z.ZodString) {
-      // Inspect string checks to see if specific formats are requested
-      const checks = schema._def.checks || [];
-      const hasEmail = checks.some((c: any) => c.kind === 'email' || c.format === 'email') || keyName === 'email';
-      const hasUuid = checks.some((c: any) => c.kind === 'uuid' || c.format === 'uuid') || keyName === 'id';
+    // 4. Handle Strings
+    if (typeIndicator === 'string' || typeIndicator === 'ZodString') {
+      const checks = schema.def?.checks || schema._def?.checks || [];
+      const hasEmail = checks.some((c: any) => c.kind === 'email' || c.format === 'email') || schema.format === 'email' || keyName?.toLowerCase() === 'email';
+      const hasUuid = checks.some((c: any) => c.kind === 'uuid' || c.format === 'uuid') || schema.format === 'uuid' || keyName?.toLowerCase() === 'id';
+      const hasUrl = checks.some((c: any) => c.kind === 'url' || c.format === 'url') || schema.format === 'url' || keyName?.toLowerCase().includes('url');
 
       if (hasEmail) {
         return 'alex.rivera@example.com';
       }
       if (hasUuid) {
         return '123e4567-e89b-12d3-a456-426614174000';
+      }
+      if (hasUrl) {
+        return 'https://react.dev/learn';
       }
       if (keyName === 'name') {
         return 'Alex Rivera';
@@ -116,20 +150,20 @@ export class AIGateway {
       return this.inferSemanticStringValue(keyName || userPrompt);
     }
 
-    if (schema instanceof z.ZodType) {
-      // Soft fallbacks
+    // 5. Handle Numbers
+    if (typeIndicator === 'number' || typeIndicator === 'ZodNumber') {
+      return 85;
     }
 
-    if (schema instanceof z.ZodNumber) {
-      return 85; // Standard high-quality score base
-    }
-
-    if (schema instanceof z.ZodBoolean) {
+    // 6. Handle Booleans
+    if (typeIndicator === 'boolean' || typeIndicator === 'ZodBoolean') {
       return true;
     }
 
-    if (schema instanceof z.ZodEnum) {
-      return schema.options[0];
+    // 7. Handle Enums
+    if (typeIndicator === 'enum' || typeIndicator === 'ZodEnum') {
+      const options = schema.options || schema.def?.options || schema._def?.options || [];
+      return options[0] || null;
     }
 
     return null;

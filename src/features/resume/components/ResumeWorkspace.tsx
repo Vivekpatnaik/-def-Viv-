@@ -14,7 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useToast } from '@/shared/providers/ToastProvider';
-import { ResumeServiceV2 } from '../services/resumeServiceV2';
+import { ResumeService } from '../services/resumeService';
 import { ParsedResume, ResumeVersionRecord } from '../schemas';
 
 type ActiveTabType = 'upload' | 'star' | 'roles' | 'companies' | 'versions';
@@ -72,7 +72,7 @@ export function ResumeWorkspace() {
     // Step 2: Parse and score simulation
     await new Promise((resolve) => setTimeout(resolve, 1500));
     try {
-      const result = await ResumeServiceV2.parseResume(
+      const result = await ResumeService.parseResume(
         'Alex Rivera - alex.rivera@example.com - Senior Frontend Engineer with React and Next.js experience.'
       );
       setResumeData(result);
@@ -101,7 +101,7 @@ export function ResumeWorkspace() {
     setUploadStatus('parsing');
 
     try {
-      const rewritten = await ResumeServiceV2.executeRewrite(resumeData, option);
+      const rewritten = await ResumeService.executeRewrite(resumeData, option);
       setResumeData(rewritten);
 
       // Append new version
