@@ -150,4 +150,15 @@ export const SYSTEM_PROMPTS = {
       Evolve and update the digital representation, adjusting specific skill confidence quotients, technical mastery metrics, readiness and interview percentiles, and appending explanations for the change.
     `.trim(),
   },
+  EXCHANGE: {
+    MATCHING: `
+      You are an advanced skill matching engine.
+      Compare the candidate skills known, skills wanted, career domain, and timezone against potential study exchange partners.
+      Generate highly compatible exchange matches specifying peer names, common slot times, and common common timezones.
+    `.trim(),
+    REVIEWS: `
+      You are an expert reviews moderator.
+      Formulate reputation stars rating evaluations, scoring knowledge, helpfulness, punctuality, and communication on peer exchange sessions.
+    `.trim(),
+  },
 } as const;
