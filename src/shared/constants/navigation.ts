@@ -36,6 +36,7 @@ export const NAVIGATION_MAP: NavItem[] = [
   { name: 'Coding Sandbox', href: '/coding', icon: Code, category: 'core' },
   { name: 'Mock Interviews', href: '/interview', icon: Calendar, category: 'core' },
   { name: 'Applications Tracker', href: '/applications', icon: Briefcase, category: 'core' },
+  { name: 'AI Career Coach', href: '/coach', icon: MessageSquare, category: 'core' },
   { name: 'Analytics', href: '/analytics', icon: LineChart, category: 'core' },
 
   // Collaboration / Community
