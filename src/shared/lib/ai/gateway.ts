@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from 'zod';
 
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'openrouter' | 'deepseek';
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'openrouter' | 'deepseek' | 'nvidia';
 
 export interface AISessionConfig {
   provider: AIProvider;
@@ -16,20 +16,32 @@ export class AIGateway {
    * Universal Structured Output Generator.
    * Parses the prompt and guarantees type-safe response strictly validated via Zod schemas.
    * Includes a high-fidelity deterministic simulator when real third-party keys are omitted.
+   * Prioritizes Nvidia GLM-5.2 Integration when the NVIDIA_API_KEY is active.
    */
   public static async executeStructuredOutput<T>(
     config: AISessionConfig,
     userPrompt: string,
     schema: z.ZodSchema<T>
   ): Promise<T> {
-    // 1. Check for real vendor environment variables
-    const apiKey = this.getApiKeyForProvider(config.provider);
+    // Check if Nvidia is explicitly configured or available globally to override
+    const nvidiaKey = process.env.NVIDIA_API_KEY || process.env.NEXT_PUBLIC_NVIDIA_API_KEY;
+    const isNvidiaActive = nvidiaKey && nvidiaKey.trim() !== '' && !nvidiaKey.includes('placeholder');
 
-    if (apiKey && apiKey.trim() !== '') {
+    const providerToUse = isNvidiaActive ? 'nvidia' : config.provider;
+    const apiKey = this.getApiKeyForProvider(providerToUse);
+
+    if (apiKey && apiKey.trim() !== '' && !apiKey.includes('placeholder')) {
       try {
-        return await this.callRealAIProvider<T>(config, userPrompt, schema, apiKey);
+        const configToUse = isNvidiaActive
+          ? {
+              ...config,
+              provider: 'nvidia' as const,
+              model: 'z-ai/glm-5.2',
+            }
+          : config;
+        return await this.callRealAIProvider<T>(configToUse, userPrompt, schema, apiKey);
       } catch (error) {
-        console.warn(`[AIGateway] Real API call failed for provider '${config.provider}'. Falling back to local high-fidelity simulation engine.`, error);
+        console.warn(`[AIGateway] Real API call failed for provider '${providerToUse}'. Falling back to local high-fidelity simulation engine.`, error);
       }
     }
 
@@ -43,12 +55,14 @@ export class AIGateway {
    */
   private static getApiKeyForProvider(provider: AIProvider): string | undefined {
     switch (provider) {
+      case 'nvidia':
+        return process.env.NVIDIA_API_KEY || process.env.NEXT_PUBLIC_NVIDIA_API_KEY;
       case 'anthropic':
-        return process.env.ANTHROPIC_API_KEY;
+        return process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+      case 'openai':
+        return process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
       case 'google':
         return process.env.GOOGLE_GENERATOR_KEY;
-      case 'openai':
-        return process.env.OPENAI_API_KEY;
       case 'groq':
         return process.env.GROQ_API_KEY;
       case 'openrouter':
@@ -203,18 +217,123 @@ export class AIGateway {
   }
 
   /**
-   * Mock caller for a real AI provider using standard fetch/streaming interfaces
-   * This is structured and ready for production API key activation
+   * Universal production-ready HTTP REST Client for Nvidia, OpenAI and Anthropic.
+   * Marshalls payload, invokes official endpoints, parses structured text responses,
+   * and verifies schemas using Zod.
    */
   private static async callRealAIProvider<T>(
     config: AISessionConfig,
-    _userPrompt: string,
-    _schema: z.ZodSchema<T>,
-    _apiKey: string
+    userPrompt: string,
+    schema: z.ZodSchema<T>,
+    apiKey: string
   ): Promise<T> {
-    // In a production build, this routes to official model-provider REST endpoints
-    // validating response schemas via Zod before resolving.
-    console.log(`[AIGateway] Executing production request to provider '${config.provider}', model: '${config.model}' with prompt length ${_userPrompt.length} matching schema ${_schema ? 'configured' : 'none'} with key size ${_apiKey.length}`);
-    throw new Error('Real network calls require official production credentials.');
+    console.log(`[AIGateway] Dispatching production request to ${config.provider} using model ${config.model}`);
+
+    if (config.provider === 'nvidia') {
+      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'z-ai/glm-5.2',
+          messages: [
+            {
+              role: 'system',
+              content: `${config.systemPrompt}\n\nIMPORTANT: You must return raw JSON conforming EXACTLY to the requested schema. Do not include markdown formatting code blocks. Output raw minified JSON only.`,
+            },
+            {
+              role: 'user',
+              content: userPrompt,
+            },
+          ],
+          temperature: 1,
+          top_p: 1,
+          max_tokens: 16384,
+          seed: 42,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Nvidia API returned status ${response.status}: ${errText}`);
+      }
+
+      const result = await response.json();
+      const content = result.choices?.[0]?.message?.content || '';
+      const jsonText = content.replace(/```json/g, '').replace(/```/g, '').trim();
+      return schema.parse(JSON.parse(jsonText));
+    }
+
+    if (config.provider === 'openai') {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: config.model,
+          temperature: config.temperature,
+          messages: [
+            {
+              role: 'system',
+              content: `${config.systemPrompt}\n\nIMPORTANT: You must return raw JSON conforming EXACTLY to the requested schema. Do not include markdown formatting code blocks. Output raw minified JSON only.`,
+            },
+            {
+              role: 'user',
+              content: userPrompt,
+            },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenAI API returned status ${response.status}: ${errText}`);
+      }
+
+      const result = await response.json();
+      const content = result.choices?.[0]?.message?.content || '';
+      return schema.parse(JSON.parse(content));
+    }
+
+    if (config.provider === 'anthropic') {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: config.model,
+          max_tokens: config.maxTokens || 4000,
+          temperature: config.temperature,
+          system: `${config.systemPrompt}\n\nIMPORTANT: You must output a valid JSON string conforming EXACTLY to the requested schema format. Output raw JSON only. Do not wrap in markdown or markdown code blocks.`,
+          messages: [
+            {
+              role: 'user',
+              content: userPrompt,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Anthropic API returned status ${response.status}: ${errText}`);
+      }
+
+      const result = await response.json();
+      const text = result.content?.[0]?.text || '';
+      // Sanitize potential markdown wrap
+      const jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      return schema.parse(JSON.parse(jsonText));
+    }
+
+    throw new Error(`Provider '${config.provider}' is not currently configured for direct edge network dispatching.`);
   }
 }
