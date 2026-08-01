@@ -143,4 +143,11 @@ export const SYSTEM_PROMPTS = {
       Recommend mini, medium, and portfolio scale development projects. Define tech stacks, detail architecture blueprints, and describe exact value propositions to get hired.
     `.trim(),
   },
+  TWIN: {
+    EVOLUTION: `
+      You are an expert systems evolution model.
+      Evaluate the candidate's previous Career Digital Twin state along with newly completed activities data (such as assessment, learning, projects, interviews, applications, or offers).
+      Evolve and update the digital representation, adjusting specific skill confidence quotients, technical mastery metrics, readiness and interview percentiles, and appending explanations for the change.
+    `.trim(),
+  },
 } as const;

@@ -150,9 +150,23 @@ export class AIGateway {
       return this.inferSemanticStringValue(keyName || userPrompt);
     }
 
-    // 5. Handle Numbers
+    // 5. Handle Numbers with constraints
     if (typeIndicator === 'number' || typeIndicator === 'ZodNumber') {
-      return 85;
+      const checks = schema.def?.checks || schema._def?.checks || [];
+      const maxVal = schema.maxValue !== undefined && schema.maxValue !== Infinity && schema.maxValue !== -Infinity
+        ? schema.maxValue
+        : checks.find((c: any) => c.kind === 'max')?.value;
+      const minVal = schema.minValue !== undefined && schema.minValue !== Infinity && schema.minValue !== -Infinity
+        ? schema.minValue
+        : checks.find((c: any) => c.kind === 'min')?.value;
+
+      if (maxVal !== undefined) {
+        return maxVal;
+      }
+      if (minVal !== undefined) {
+        return minVal;
+      }
+      return 85; // Standard high-quality score base
     }
 
     // 6. Handle Booleans

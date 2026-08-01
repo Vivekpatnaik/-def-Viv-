@@ -28,6 +28,7 @@ export interface NavItem {
 export const NAVIGATION_MAP: NavItem[] = [
   // Core Platform Journey Items
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, category: 'core' },
+  { name: 'Career Digital Twin', href: '/twin', icon: User, category: 'core' },
   { name: 'Resume Intelligence', href: '/resume', icon: FileText, category: 'core' },
   { name: 'Career Assessment', href: '/career', icon: Target, category: 'core' },
   { name: 'Career Roadmap', href: '/roadmap', icon: Compass, category: 'core' },
